@@ -145,7 +145,24 @@
 - `CFBundleShortVersionString`을 `0.2.0`, `CFBundleVersion`을 `2`로 올렸다.
 - MCP proxy manifest 버전을 `0.2.0`으로 올렸다.
 
-## 14. 현재 제약과 다음 과제
+## 14. Hook awareness와 thaw 판단
+
+- hook payload에 `fridgeAwareness`를 항상 포함해, agent가 Fridge hook이 설치되어 있고 AI child process를 `SIGSTOP`/`SIGCONT`로 freeze/resume할 수 있음을 인지하도록 했다.
+- hook bridge가 stdin payload를 읽어 `fridge hook`으로 넘기도록 바꿨다.
+- hook payload에 `hookContext`를 추가해 `lastTool`, `cwd`, `pendingPromptSummary`를 구조화했다.
+- hook payload에 `resumeProbe`와 `thawResult`를 추가했다.
+  - `resumeProbe`: child 생존 여부, TTY 연결 여부, 남은 frozen PID, 사라진 PID
+  - `thawResult`: `resumed`, `child_gone`, `tty_lost`, `unsafe_to_resume`
+- `agentInstruction`을 추가해 hook을 받은 agent가 바로 다음 행동을 판단할 수 있게 했다.
+- 기본 hook 설치 이벤트를 `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, `SessionEnd`로 넓혔다.
+- `ps`에서 TTY를 함께 파싱하고, freeze/resume 직후 터미널에 `FREEZED:`/`RESUMED:` best-effort notice를 남기도록 추가했다.
+
+## 15. 0.3 릴리즈
+
+- `CFBundleShortVersionString`을 `0.3.0`, `CFBundleVersion`을 `3`으로 올렸다.
+- MCP proxy manifest 버전을 `0.3.0`으로 올렸다.
+
+## 16. 현재 제약과 다음 과제
 
 - 현재 번들은 ad-hoc 서명이다. 안정적인 TCC 권한 UX에는 Apple Development 또는 Developer ID 서명이 필요하다.
 - Input Monitoring은 현재 Carbon hot key 방식에서는 필수 권한이 아니다.

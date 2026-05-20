@@ -61,11 +61,15 @@ public final class AgentHookInstaller: @unchecked Sendable {
         # \(marker): bridge AI agent lifecycle hooks into Fridge.
         AGENT="${FRIDGE_AGENT:-${1:-unknown}}"
         EVENT="${FRIDGE_EVENT:-${2:-hook}}"
+        PAYLOAD=""
+        if [ ! -t 0 ]; then
+          PAYLOAD="$(cat)"
+        fi
         if command -v fridge >/dev/null 2>&1; then
-          exec fridge hook "$AGENT" "$EVENT" "$@"
+          exec fridge hook "$AGENT" "$EVENT" "$PAYLOAD" "$@"
         fi
         if [ -x "$HOME/.local/bin/fridge" ]; then
-          exec "$HOME/.local/bin/fridge" hook "$AGENT" "$EVENT" "$@"
+          exec "$HOME/.local/bin/fridge" hook "$AGENT" "$EVENT" "$PAYLOAD" "$@"
         fi
         exit 0
         """
@@ -78,7 +82,7 @@ public final class AgentHookInstaller: @unchecked Sendable {
         let command = "FRIDGE_AGENT=codex FRIDGE_EVENT=$CODEX_HOOK_EVENT \"\(bridgeURL().path)\" # \(marker)"
         try mergeHooksJSON(
             at: codexHooksURL(),
-            events: ["SessionStart", "Stop", "SessionEnd"],
+            events: ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SessionEnd"],
             command: command,
             timeout: 5
         )
@@ -92,7 +96,7 @@ public final class AgentHookInstaller: @unchecked Sendable {
         let command = "FRIDGE_AGENT=claude FRIDGE_EVENT=$CLAUDE_HOOK_EVENT \"\(bridgeURL().path)\" # \(marker)"
         try mergeHooksJSON(
             at: claudeSettingsURL(),
-            events: ["SessionStart", "Stop", "SessionEnd"],
+            events: ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SessionEnd"],
             command: command,
             timeout: 5
         )
@@ -110,7 +114,7 @@ public final class AgentHookInstaller: @unchecked Sendable {
 
         Cursor does not expose a single stable local hook file across all distributions. Use this bridge command from Cursor Agent automation or task hooks:
 
-        FRIDGE_AGENT=cursor FRIDGE_EVENT=Stop "\(bridgeURL().path)"
+        FRIDGE_AGENT=cursor FRIDGE_EVENT=UserPromptSubmit "\(bridgeURL().path)"
         """
         try text.write(to: cursorInstructionsURL(), atomically: true, encoding: .utf8)
     }

@@ -48,7 +48,11 @@ public final class StatusMenuController: NSObject {
 
     @objc private func freezeAll() {
         do {
-            _ = try service.freezeAll(reason: "menu bar Freeze All AI action", source: "menu")
+            _ = try service.freezeAll(
+                reason: "menu bar Freeze All AI action",
+                source: "menu",
+                resumeHint: "Pause again"
+            )
             refresh()
         } catch {
             showError(error)
@@ -210,7 +214,15 @@ public final class StatusMenuController: NSObject {
 
     private func toggleFromHotKey() {
         do {
-            _ = try service.toggle()
+            if latestStatus.state == .frozen {
+                _ = try service.resumeAll()
+            } else {
+                _ = try service.freezeAll(
+                    reason: "manual pause hotkey",
+                    source: "pause-key",
+                    resumeHint: "Pause again"
+                )
+            }
             refresh()
         } catch {
             showError(error)

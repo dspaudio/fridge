@@ -17,7 +17,11 @@ let arguments = Array(CommandLine.arguments.dropFirst())
 do {
     switch command {
     case "freeze":
-        let status = try service.freezeAll(reason: "CLI freeze command", source: "cli")
+        let status = try service.freezeAll(
+            reason: "CLI freeze command",
+            source: "cli",
+            resumeHint: "fridge resume"
+        )
         _ = try activity.record(status: status)
         print("Frozen \(status.frozenPIDs.count) process(es).")
         printStatus(status)

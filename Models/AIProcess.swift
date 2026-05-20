@@ -10,13 +10,15 @@ public struct SystemProcess: Codable, Hashable, Sendable {
     public let pid: Int32
     public let parentPID: Int32
     public let state: String
+    public let terminal: String?
     public let command: String
     public let arguments: String
 
-    public init(pid: Int32, parentPID: Int32, state: String, command: String, arguments: String) {
+    public init(pid: Int32, parentPID: Int32, state: String, terminal: String? = nil, command: String, arguments: String) {
         self.pid = pid
         self.parentPID = parentPID
         self.state = state
+        self.terminal = terminal
         self.command = command
         self.arguments = arguments
     }

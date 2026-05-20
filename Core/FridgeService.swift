@@ -7,15 +7,18 @@ public final class FridgeService: @unchecked Sendable {
     private let watcher: ProcessWatcher
     private let controller: FreezeController
     private let freezeContextStore: FreezeContextStore
+    private let terminalNoticeWriter: TerminalNoticeWriter
 
     public init(
         watcher: ProcessWatcher = ProcessWatcher(),
         controller: FreezeController = FreezeController(),
-        freezeContextStore: FreezeContextStore = FreezeContextStore()
+        freezeContextStore: FreezeContextStore = FreezeContextStore(),
+        terminalNoticeWriter: TerminalNoticeWriter = TerminalNoticeWriter()
     ) {
         self.watcher = watcher
         self.controller = controller
         self.freezeContextStore = freezeContextStore
+        self.terminalNoticeWriter = terminalNoticeWriter
     }
 
     public func status() throws -> FridgeStatus {
@@ -38,23 +41,32 @@ public final class FridgeService: @unchecked Sendable {
     }
 
     @discardableResult
-    public func freezeAll(reason: String = "manual freeze request", source: String = "fridge") throws -> FridgeStatus {
+    public func freezeAll(
+        reason: String = "manual freeze request",
+        source: String = "fridge",
+        resumeHint: String = "fridge resume"
+    ) throws -> FridgeStatus {
         let detected = try watcher.detectAIProcesses()
         try controller.freeze(detected)
         let frozenStatus = try status()
-        try freezeContextStore.save(makeFreezeContext(
+        let context = makeFreezeContext(
             status: frozenStatus,
             reason: reason,
             source: source
-        ))
+        )
+        try freezeContextStore.save(context)
+        terminalNoticeWriter.writeFreezeNotice(record: context, status: frozenStatus, resumeHint: resumeHint)
         return frozenStatus
     }
 
     @discardableResult
     public func resumeAll() throws -> FridgeStatus {
+        let context = freezeContextStore.load()
         try controller.resume()
         try freezeContextStore.clear()
-        return try status()
+        let resumedStatus = try status()
+        terminalNoticeWriter.writeResumeNotice(record: context, status: resumedStatus)
+        return resumedStatus
     }
 
     @discardableResult
@@ -63,7 +75,11 @@ public final class FridgeService: @unchecked Sendable {
         if current.state == .frozen {
             return try resumeAll()
         }
-        return try freezeAll(reason: "toggle requested while agents were running", source: "fridge")
+        return try freezeAll(
+            reason: "toggle requested while agents were running",
+            source: "fridge",
+            resumeHint: "Pause again"
+        )
     }
 
     private func makeFreezeContext(status: FridgeStatus, reason: String, source: String) -> FreezeContextRecord {
@@ -76,6 +92,7 @@ public final class FridgeService: @unchecked Sendable {
                         name: process.displayName,
                         pid: process.pid,
                         parentPID: process.parentPID,
+                        terminal: process.terminal,
                         command: process.command,
                         arguments: process.arguments,
                         matchedBy: group.matchedBy
@@ -95,6 +112,10 @@ public final class FridgeService: @unchecked Sendable {
             createdAt: Date(),
             source: source,
             reason: reason,
+            lastTool: nil,
+            cwd: FileManager.default.currentDirectoryPath,
+            activeChildPID: status.frozenPIDs.first,
+            pendingPromptSummary: reason,
             frozenPIDs: status.frozenPIDs,
             processes: processes,
             resumeCommand: "fridge resume",

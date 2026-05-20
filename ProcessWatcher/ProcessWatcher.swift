@@ -40,7 +40,7 @@ public final class ProcessWatcher: @unchecked Sendable {
     private func runPS() throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/ps")
-        process.arguments = ["-axo", "pid=,ppid=,stat=,comm=,args="]
+        process.arguments = ["-axo", "pid=,ppid=,stat=,tt=,comm=,args="]
 
         let pipe = Pipe()
         let errorPipe = Pipe()
@@ -56,19 +56,21 @@ public final class ProcessWatcher: @unchecked Sendable {
     private func parseLine(_ line: Substring) -> SystemProcess? {
         let text = line.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return nil }
-        let parts = text.split(separator: " ", maxSplits: 4, omittingEmptySubsequences: true)
-        guard parts.count >= 5,
+        let parts = text.split(separator: " ", maxSplits: 5, omittingEmptySubsequences: true)
+        guard parts.count >= 6,
               let pid = Int32(parts[0]),
               let parentPID = Int32(parts[1]) else {
             return nil
         }
 
+        let terminal = String(parts[3])
         return SystemProcess(
             pid: pid,
             parentPID: parentPID,
             state: String(parts[2]),
-            command: String(parts[3]),
-            arguments: String(parts[4])
+            terminal: terminal == "??" ? nil : terminal,
+            command: String(parts[4]),
+            arguments: String(parts[5])
         )
     }
 

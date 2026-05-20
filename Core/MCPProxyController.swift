@@ -18,7 +18,7 @@ public final class MCPProxyController: @unchecked Sendable {
     public func manifestJSON() throws -> String {
         try jsonString([
             "name": "fridge",
-            "version": "0.2.0",
+            "version": "0.3.0",
             "tools": toolDescriptors()
         ])
     }
@@ -63,7 +63,11 @@ public final class MCPProxyController: @unchecked Sendable {
                 }
             ]
         case "fridge_freeze":
-            let status = try service.freezeAll(reason: "MCP fridge_freeze tool call", source: "mcp")
+            let status = try service.freezeAll(
+                reason: "MCP fridge_freeze tool call",
+                source: "mcp",
+                resumeHint: "fridge_resume"
+            )
             _ = try activity.record(status: status)
             return ["state": status.state.rawValue, "frozenPIDs": status.frozenPIDs.map(Int.init)]
         case "fridge_resume":

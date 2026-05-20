@@ -5,6 +5,7 @@ public struct FrozenProcessContext: Codable, Sendable {
     public let name: String
     public let pid: Int32
     public let parentPID: Int32
+    public let terminal: String?
     public let command: String
     public let arguments: String
     public let matchedBy: String
@@ -15,6 +16,10 @@ public struct FreezeContextRecord: Codable, Sendable {
     public let createdAt: Date
     public let source: String
     public let reason: String
+    public let lastTool: String?
+    public let cwd: String
+    public let activeChildPID: Int32?
+    public let pendingPromptSummary: String?
     public let frozenPIDs: [Int32]
     public let processes: [FrozenProcessContext]
     public let resumeCommand: String

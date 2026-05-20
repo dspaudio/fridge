@@ -243,7 +243,11 @@ private final class ControlPanelModel: ObservableObject {
 
     func freezeAll() {
         do {
-            _ = try service.freezeAll(reason: "control panel Freeze All AI action", source: "control-panel")
+            _ = try service.freezeAll(
+                reason: "control panel Freeze All AI action",
+                source: "control-panel",
+                resumeHint: "Resume All"
+            )
             message = "Frozen detected AI process trees."
             refresh()
         } catch {
