@@ -48,7 +48,7 @@ public final class StatusMenuController: NSObject {
 
     @objc private func freezeAll() {
         do {
-            _ = try service.freezeAll()
+            _ = try service.freezeAll(reason: "menu bar Freeze All AI action", source: "menu")
             refresh()
         } catch {
             showError(error)

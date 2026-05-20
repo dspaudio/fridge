@@ -6,6 +6,7 @@ let service = FridgeService()
 let snapshots = SnapshotController()
 let activity = ActivityMonitor()
 let hooks = HookController()
+let hookPayloads = AgentHookPayloadBuilder()
 let network = NetworkFreezeController()
 let mcp = MCPProxyController()
 let cliInstaller = CLIHelperInstaller()
@@ -16,7 +17,7 @@ let arguments = Array(CommandLine.arguments.dropFirst())
 do {
     switch command {
     case "freeze":
-        let status = try service.freezeAll()
+        let status = try service.freezeAll(reason: "CLI freeze command", source: "cli")
         _ = try activity.record(status: status)
         print("Frozen \(status.frozenPIDs.count) process(es).")
         printStatus(status)
@@ -67,9 +68,15 @@ do {
             fputs("Usage: fridge hook <source> <event> [payload]\n", stderr)
             exit(2)
         }
-        let payload = arguments.dropFirst(3).joined(separator: " ")
-        let event = try hooks.record(source: arguments[1], event: arguments[2], payload: payload)
-        print("Recorded hook \(event.id) from \(event.source):\(event.event).")
+        let receivedPayload = arguments.dropFirst(3).joined(separator: " ")
+        let payload = try hookPayloads.makePayload(
+            source: arguments[1],
+            event: arguments[2],
+            receivedPayload: receivedPayload
+        )
+        let json = try hookPayloads.jsonString(payload)
+        _ = try hooks.record(source: arguments[1], event: arguments[2], payload: json)
+        print(json)
     case "hooks":
         let events = try hooks.recent()
         if events.isEmpty {
@@ -183,7 +190,7 @@ private func printHelp() {
                Reverse-apply a stored git diff snapshot
       activity Show recent AI activity samples
       hook <source> <event> [payload]
-               Record a Claude/Codex/Cursor hook event
+               Record a hook event and print Fridge context JSON
       hooks    Show recent hook events
       install-cli
                Install ~/.local/bin/fridge helper

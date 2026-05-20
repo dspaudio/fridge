@@ -130,7 +130,22 @@
 - MCP 서버는 멈추지 않았다.
 - 실제 child 작업만 freeze됐다.
 
-## 12. 현재 제약과 다음 과제
+## 12. Agent hook freeze context 전달
+
+- freeze 시점에 `~/.fridge/freeze-context.json`을 저장하도록 추가했다.
+- 저장 정보에는 다음을 포함한다.
+  - 무엇이 얼었는지: frozen PID와 감지된 프로세스 요약
+  - 왜 얼었는지: CLI, 메뉴, Control Panel, MCP 등 호출 source와 reason
+  - 다시 녹이면 어디서 이어지는지: `fridge resume`/`SIGCONT` 후 기존 suspended instruction과 terminal/session context에서 이어진다는 설명
+- `fridge hook <source> <event> [payload]`는 hook 로그 기록과 함께 agent가 바로 읽을 수 있는 JSON을 stdout으로 출력한다.
+- hook JSON에는 `fridgeState`, `frozenPIDs`, `detectedProcesses`, `freezeContext`, `message`를 포함한다.
+
+## 13. 0.2 릴리즈
+
+- `CFBundleShortVersionString`을 `0.2.0`, `CFBundleVersion`을 `2`로 올렸다.
+- MCP proxy manifest 버전을 `0.2.0`으로 올렸다.
+
+## 14. 현재 제약과 다음 과제
 
 - 현재 번들은 ad-hoc 서명이다. 안정적인 TCC 권한 UX에는 Apple Development 또는 Developer ID 서명이 필요하다.
 - Input Monitoring은 현재 Carbon hot key 방식에서는 필수 권한이 아니다.

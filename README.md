@@ -34,7 +34,7 @@ Fridge는 kill switch가 아닙니다. 프로세스를 종료하지 않고 `SIGS
 - 권한 온보딩 창: Accessibility, Input Monitoring 안내, relaunch
 - CLI helper 설치/해제: `~/.local/bin/fridge`
 - Agent hook bridge 설치/해제: Codex, Claude, Cursor 안내
-- activity log, hook log, git diff snapshot, rollback
+- activity log, hook log, freeze context, git diff snapshot, rollback
 - network freeze는 실제 firewall 변경 없이 guarded plan으로만 제공
 
 ## 빌드와 실행
@@ -59,9 +59,9 @@ open dist/Fridge.app
 FRIDGE_CODESIGN_IDENTITY="Apple Development: ..." scripts/build-app.sh
 ```
 
-## 0.1 릴리즈 실행 주의사항
+## 0.2 릴리즈 실행 주의사항
 
-현재 0.1 릴리즈 빌드는 Apple Developer 인증서로 서명되지 않은 개발용 ad-hoc 서명 앱입니다. 이 때문에 macOS에서 다음 현상이 발생할 수 있습니다.
+현재 0.2 릴리즈 빌드는 Apple Developer 인증서로 서명되지 않은 개발용 ad-hoc 서명 앱입니다. 이 때문에 macOS에서 다음 현상이 발생할 수 있습니다.
 
 - 최초 실행 시 “확인되지 않은 개발자” 또는 손상된 앱처럼 보이는 Gatekeeper 경고가 뜰 수 있습니다.
 - Accessibility/Input Monitoring 같은 Privacy 권한이 앱 재빌드 후 다시 요구될 수 있습니다.
@@ -113,6 +113,18 @@ fridge mcp-proxy manifest
 - Quit Fridge
 
 Control Panel에서는 설치 상태, 권한 상태, freeze/resume, relaunch, quit을 버튼으로 제어합니다.
+
+## Agent hook 전달 정보
+
+freeze가 실행되면 Fridge는 `~/.fridge/freeze-context.json`에 현재 얼린 PID, 감지된 프로세스, freeze 이유, resume 명령, `SIGCONT` 후 이어지는 위치 설명을 저장합니다. `fridge resume`이 성공하면 이 컨텍스트는 삭제됩니다.
+
+설치된 agent hook bridge가 `fridge hook <source> <event> [payload]`를 호출하면, Fridge는 hook 로그에 이벤트를 남기고 stdout으로 JSON을 출력합니다. 이 JSON에는 다음 정보가 들어갑니다.
+
+- `fridgeState`: `idle`, `running`, `frozen`
+- `frozenPIDs`: 현재 frozen PID 목록
+- `detectedProcesses`: Claude/Codex/Cursor 등 감지된 프로세스 트리 요약
+- `freezeContext`: freeze 시점의 이유와 복원 정보
+- `message`: agent가 바로 읽을 수 있는 한 문장 요약
 
 ## 권한과 재실행
 
