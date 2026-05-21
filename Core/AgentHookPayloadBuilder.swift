@@ -89,8 +89,8 @@ public final class AgentHookPayloadBuilder: @unchecked Sendable {
         )
     }
 
-    public func jsonString(_ payload: AgentHookFridgePayload) throws -> String {
-        let data = try JSONEncoder.fridge.encode(payload)
+    public func jsonString(_ payload: AgentHookFridgePayload, prettyPrinted: Bool = true) throws -> String {
+        let data = try JSONEncoder.fridge(prettyPrinted: prettyPrinted).encode(payload)
         return String(data: data, encoding: .utf8) ?? "{}"
     }
 
@@ -272,9 +272,9 @@ public final class AgentHookPayloadBuilder: @unchecked Sendable {
 }
 
 private extension JSONEncoder {
-    static var fridge: JSONEncoder {
+    static func fridge(prettyPrinted: Bool = true) -> JSONEncoder {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.outputFormatting = prettyPrinted ? [.prettyPrinted, .sortedKeys] : [.sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         return encoder
     }

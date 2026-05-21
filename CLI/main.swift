@@ -69,10 +69,14 @@ do {
         }
     case "hook":
         guard arguments.count >= 3 else {
-            fputs("Usage: fridge hook <source> <event> [payload]\n", stderr)
+            fputs("Usage: fridge hook <source> <event> [payload] [--json|--compact|--quiet]\n", stderr)
             exit(2)
         }
-        let receivedPayload = arguments.dropFirst(3).joined(separator: " ")
+        let hookArguments = Array(arguments.dropFirst(3))
+        let outputMode = HookOutputMode(arguments: hookArguments)
+        let receivedPayload = hookArguments
+            .filter { !HookOutputMode.isFlag($0) }
+            .joined(separator: " ")
         let payload = try hookPayloads.makePayload(
             source: arguments[1],
             event: arguments[2],
@@ -80,7 +84,16 @@ do {
         )
         let json = try hookPayloads.jsonString(payload)
         _ = try hooks.record(source: arguments[1], event: arguments[2], payload: json)
-        print(json)
+        switch outputMode {
+        case .message:
+            print(payload.message)
+        case .json:
+            print(json)
+        case .compact:
+            print(try hookPayloads.jsonString(payload, prettyPrinted: false))
+        case .quiet:
+            break
+        }
     case "hooks":
         let events = try hooks.recent()
         if events.isEmpty {
@@ -160,6 +173,29 @@ do {
     exit(1)
 }
 
+private enum HookOutputMode {
+    case message
+    case json
+    case compact
+    case quiet
+
+    init(arguments: [String]) {
+        if arguments.contains("--quiet") {
+            self = .quiet
+        } else if arguments.contains("--compact") {
+            self = .compact
+        } else if arguments.contains("--json") {
+            self = .json
+        } else {
+            self = .message
+        }
+    }
+
+    static func isFlag(_ argument: String) -> Bool {
+        ["--json", "--compact", "--quiet"].contains(argument)
+    }
+}
+
 private func printStatus(_ status: FridgeStatus) {
     print("State: \(status.state.rawValue)")
 
@@ -193,8 +229,8 @@ private func printHelp() {
       rollback <snapshot-id>
                Reverse-apply a stored git diff snapshot
       activity Show recent AI activity samples
-      hook <source> <event> [payload]
-               Record a hook event and print Fridge context JSON
+      hook <source> <event> [payload] [--json|--compact|--quiet]
+               Record a hook event and print a short Fridge message
       hooks    Show recent hook events
       install-cli
                Install ~/.local/bin/fridge helper
