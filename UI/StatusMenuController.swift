@@ -11,6 +11,7 @@ public final class StatusMenuController: NSObject {
     private let controlPanel: ControlPanelWindowController
     private let permissionOnboarding: PermissionOnboardingWindowController
     private var hotKeyController: GlobalHotKeyController?
+    private var fnDoubleTapController: FnDoubleTapController?
     private var timer: Timer?
     private var latestStatus = FridgeStatus(state: .idle, detected: [], frozenPIDs: [])
 
@@ -30,6 +31,12 @@ public final class StatusMenuController: NSObject {
             self?.toggleFromHotKey()
         }
         hotKeyController?.registerPauseKey()
+
+        fnDoubleTapController = FnDoubleTapController { [weak self] in
+            self?.toggleFromFnDoubleTap()
+        }
+        fnDoubleTapController?.start()
+
         refresh()
         permissionOnboarding.showIfNeeded()
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
@@ -213,14 +220,30 @@ public final class StatusMenuController: NSObject {
     }
 
     private func toggleFromHotKey() {
+        toggleFreezeWithReason(
+            reason: "manual pause hotkey",
+            source: "pause-key",
+            resumeHint: "Pause again"
+        )
+    }
+
+    private func toggleFromFnDoubleTap() {
+        toggleFreezeWithReason(
+            reason: "manual Fn double-tap",
+            source: "fn-double-tap",
+            resumeHint: "Fn twice or Pause again"
+        )
+    }
+
+    private func toggleFreezeWithReason(reason: String, source: String, resumeHint: String) {
         do {
             if latestStatus.state == .frozen {
                 _ = try service.resumeAll()
             } else {
                 _ = try service.freezeAll(
-                    reason: "manual pause hotkey",
-                    source: "pause-key",
-                    resumeHint: "Pause again"
+                    reason: reason,
+                    source: source,
+                    resumeHint: resumeHint
                 )
             }
             refresh()

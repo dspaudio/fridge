@@ -1,6 +1,8 @@
 import Carbon
 import Foundation
 
+import AppKit
+
 @MainActor
 public final class GlobalHotKeyController {
     public enum RegistrationState: Equatable {
@@ -72,6 +74,61 @@ public final class GlobalHotKeyController {
         } else {
             state = .failed(registerStatus)
         }
+    }
+}
+
+@MainActor
+final class FnDoubleTapController {
+    private let doubleTapWindow: TimeInterval
+    private let action: () -> Void
+    private var monitor: Any?
+    private var wasFunctionPressed = false
+    private var lastFunctionTapAt: Date?
+
+    init(doubleTapWindow: TimeInterval = 0.45, action: @escaping () -> Void) {
+        self.doubleTapWindow = doubleTapWindow
+        self.action = action
+    }
+
+    func start() {
+        guard monitor == nil else { return }
+
+        monitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            Task { @MainActor in
+                self?.handle(event)
+            }
+        }
+    }
+
+    func stop() {
+        if let monitor {
+            NSEvent.removeMonitor(monitor)
+            self.monitor = nil
+        }
+        wasFunctionPressed = false
+        lastFunctionTapAt = nil
+    }
+
+    private func handle(_ event: NSEvent) {
+        guard event.keyCode == UInt16(kVK_Function) else {
+            wasFunctionPressed = event.modifierFlags.contains(.function)
+            return
+        }
+
+        let isFunctionPressed = event.modifierFlags.contains(.function)
+        defer { wasFunctionPressed = isFunctionPressed }
+
+        guard isFunctionPressed, !wasFunctionPressed else { return }
+
+        let now = Date()
+        if let lastFunctionTapAt,
+           now.timeIntervalSince(lastFunctionTapAt) <= doubleTapWindow {
+            self.lastFunctionTapAt = nil
+            action()
+            return
+        }
+
+        lastFunctionTapAt = now
     }
 }
 
