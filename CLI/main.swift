@@ -73,17 +73,18 @@ do {
             exit(2)
         }
         let hookArguments = Array(arguments.dropFirst(3))
-        let outputMode = HookOutputMode(arguments: hookArguments)
         let receivedPayload = hookArguments
             .filter { !HookOutputMode.isFlag($0) }
             .joined(separator: " ")
+        let event = resolvedHookEvent(argument: arguments[2], receivedPayload: receivedPayload)
+        let outputMode = HookOutputMode(arguments: hookArguments, event: event)
         let payload = try hookPayloads.makePayload(
             source: arguments[1],
-            event: arguments[2],
+            event: event,
             receivedPayload: receivedPayload
         )
         let json = try hookPayloads.jsonString(payload)
-        _ = try hooks.record(source: arguments[1], event: arguments[2], payload: json)
+        _ = try hooks.record(source: arguments[1], event: event, payload: json)
         switch outputMode {
         case .message:
             print(payload.message)
@@ -179,13 +180,15 @@ private enum HookOutputMode {
     case compact
     case quiet
 
-    init(arguments: [String]) {
+    init(arguments: [String], event: String) {
         if arguments.contains("--quiet") {
             self = .quiet
         } else if arguments.contains("--compact") {
             self = .compact
         } else if arguments.contains("--json") {
             self = .json
+        } else if Self.quietEvents.contains(event) {
+            self = .quiet
         } else {
             self = .message
         }
@@ -194,6 +197,27 @@ private enum HookOutputMode {
     static func isFlag(_ argument: String) -> Bool {
         ["--json", "--compact", "--quiet"].contains(argument)
     }
+
+    private static let quietEvents = Set(["Stop", "SessionEnd"])
+}
+
+private func resolvedHookEvent(argument: String, receivedPayload: String) -> String {
+    if argument != "hook", !argument.isEmpty {
+        return argument
+    }
+
+    guard let data = receivedPayload.data(using: .utf8),
+          let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        return argument.isEmpty ? "hook" : argument
+    }
+
+    for key in ["hook_event_name", "hookEventName", "event", "name"] {
+        if let value = object[key] as? String, !value.isEmpty {
+            return value
+        }
+    }
+
+    return argument.isEmpty ? "hook" : argument
 }
 
 private func printStatus(_ status: FridgeStatus) {
