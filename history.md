@@ -162,7 +162,15 @@
 - `CFBundleShortVersionString`을 `0.3.0`, `CFBundleVersion`을 `3`으로 올렸다.
 - MCP proxy manifest 버전을 `0.3.0`으로 올렸다.
 
-## 16. 현재 제약과 다음 과제
+## 16. Hook 출력 정책과 0.3.1 릴리즈
+
+- `fridge hook` 기본 stdout을 전체 multiline JSON 대신 짧은 한 줄 message로 바꿨다.
+- 전체 hook payload는 기존 hook log에 계속 기록한다.
+- 진단용 출력 옵션으로 `--json`, `--compact`, `--quiet`을 추가했다.
+- `CFBundleShortVersionString`을 `0.3.1`, `CFBundleVersion`을 `4`로 올렸다.
+- MCP proxy manifest 버전을 `0.3.1`로 올렸다.
+
+## 17. 현재 제약과 다음 과제
 
 - 현재 번들은 ad-hoc 서명이다. 안정적인 TCC 권한 UX에는 Apple Development 또는 Developer ID 서명이 필요하다.
 - Input Monitoring은 현재 Carbon hot key 방식에서는 필수 권한이 아니다.
