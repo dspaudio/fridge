@@ -61,15 +61,21 @@ public final class AgentHookInstaller: @unchecked Sendable {
         # \(marker): bridge AI agent lifecycle hooks into Fridge.
         AGENT="${FRIDGE_AGENT:-${1:-unknown}}"
         EVENT="${FRIDGE_EVENT:-${2:-hook}}"
+        OUTPUT_FLAGS=""
+        case "$EVENT" in
+          Stop|SessionEnd)
+            OUTPUT_FLAGS="--quiet"
+            ;;
+        esac
         PAYLOAD=""
         if [ ! -t 0 ]; then
           PAYLOAD="$(cat)"
         fi
         if command -v fridge >/dev/null 2>&1; then
-          exec fridge hook "$AGENT" "$EVENT" "$PAYLOAD" "$@"
+          exec fridge hook "$AGENT" "$EVENT" "$PAYLOAD" "$@" $OUTPUT_FLAGS
         fi
         if [ -x "$HOME/.local/bin/fridge" ]; then
-          exec "$HOME/.local/bin/fridge" hook "$AGENT" "$EVENT" "$PAYLOAD" "$@"
+          exec "$HOME/.local/bin/fridge" hook "$AGENT" "$EVENT" "$PAYLOAD" "$@" $OUTPUT_FLAGS
         fi
         exit 0
         """
