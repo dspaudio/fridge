@@ -18,7 +18,7 @@ public final class MCPProxyController: @unchecked Sendable {
     public func manifestJSON() throws -> String {
         try jsonString([
             "name": "fridge",
-            "version": "0.3.2",
+            "version": "0.4.0",
             "tools": toolDescriptors()
         ])
     }

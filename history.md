@@ -176,7 +176,14 @@
 - `CFBundleShortVersionString`을 `0.3.2`, `CFBundleVersion`을 `5`로 올렸다.
 - MCP proxy manifest 버전을 `0.3.2`로 올렸다.
 
-## 18. 현재 제약과 다음 과제
+## 18. Fn double-tap freeze와 0.4.0 릴리즈
+
+- Pause/F15 경로는 유지하면서 Fn 두 번 누르기로 같은 freeze 경로를 타도록 추가했다.
+- freeze context에 `activeTaskDescription`을 추가하고, 최근 hook metadata에서 `lastTool`, `cwd`, `pendingPromptSummary`를 복원해 다음 hook payload로 다시 전달하도록 보강했다.
+- `CFBundleShortVersionString`을 `0.4.0`, `CFBundleVersion`을 `6`으로 올렸다.
+- MCP proxy manifest 버전을 `0.4.0`으로 올렸다.
+
+## 19. 현재 제약과 다음 과제
 
 - 현재 번들은 ad-hoc 서명이다. 안정적인 TCC 권한 UX에는 Apple Development 또는 Developer ID 서명이 필요하다.
 - Input Monitoring은 현재 Carbon hot key 방식에서는 필수 권한이 아니다.
