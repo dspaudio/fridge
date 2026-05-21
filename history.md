@@ -170,7 +170,13 @@
 - `CFBundleShortVersionString`을 `0.3.1`, `CFBundleVersion`을 `4`로 올렸다.
 - MCP proxy manifest 버전을 `0.3.1`로 올렸다.
 
-## 17. 현재 제약과 다음 과제
+## 17. Hook quiet bridge와 0.3.2 릴리즈
+
+- `Stop`, `SessionEnd` hook bridge 호출은 `--quiet`로 전달해 종료 hook stdout noise를 줄였다.
+- `CFBundleShortVersionString`을 `0.3.2`, `CFBundleVersion`을 `5`로 올렸다.
+- MCP proxy manifest 버전을 `0.3.2`로 올렸다.
+
+## 18. 현재 제약과 다음 과제
 
 - 현재 번들은 ad-hoc 서명이다. 안정적인 TCC 권한 UX에는 Apple Development 또는 Developer ID 서명이 필요하다.
 - Input Monitoring은 현재 Carbon hot key 방식에서는 필수 권한이 아니다.
