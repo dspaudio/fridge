@@ -7,17 +7,20 @@ public final class FridgeService: @unchecked Sendable {
     private let watcher: ProcessWatcher
     private let controller: FreezeController
     private let freezeContextStore: FreezeContextStore
+    private let hookController: HookController
     private let terminalNoticeWriter: TerminalNoticeWriter
 
     public init(
         watcher: ProcessWatcher = ProcessWatcher(),
         controller: FreezeController = FreezeController(),
         freezeContextStore: FreezeContextStore = FreezeContextStore(),
+        hookController: HookController = HookController(),
         terminalNoticeWriter: TerminalNoticeWriter = TerminalNoticeWriter()
     ) {
         self.watcher = watcher
         self.controller = controller
         self.freezeContextStore = freezeContextStore
+        self.hookController = hookController
         self.terminalNoticeWriter = terminalNoticeWriter
     }
 
@@ -100,6 +103,19 @@ public final class FridgeService: @unchecked Sendable {
                 }
         }
 
+        let recentHookContext = recentHookContext()
+        let activeChildPID = status.frozenPIDs.first
+        let activeProcess = activeChildPID.flatMap { pid in
+            processes.first { $0.pid == pid }
+        } ?? processes.first
+        let activeTaskDescription = recentHookContext.flatMap(taskDescription(from:))
+            ?? activeProcess.map { process in
+                [process.name, process.command, process.arguments]
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " ")
+            }
+        let pendingPromptSummary = recentHookContext?.pendingPromptSummary ?? reason
+
         let pidList = status.frozenPIDs.map(String.init).joined(separator: ",")
         let resumesAt = if pidList.isEmpty {
             "fridge resume sends SIGCONT to the stored frozen processes and they continue from their suspended instruction."
@@ -112,10 +128,11 @@ public final class FridgeService: @unchecked Sendable {
             createdAt: Date(),
             source: source,
             reason: reason,
-            lastTool: nil,
-            cwd: FileManager.default.currentDirectoryPath,
-            activeChildPID: status.frozenPIDs.first,
-            pendingPromptSummary: reason,
+            lastTool: recentHookContext?.lastTool,
+            cwd: recentHookContext?.cwd ?? FileManager.default.currentDirectoryPath,
+            activeChildPID: activeChildPID,
+            activeTaskDescription: activeTaskDescription,
+            pendingPromptSummary: pendingPromptSummary,
             frozenPIDs: status.frozenPIDs,
             processes: processes,
             resumeCommand: "fridge resume",
@@ -123,7 +140,51 @@ public final class FridgeService: @unchecked Sendable {
         )
     }
 
+    private func recentHookContext() -> HookContextPayload? {
+        guard let events = try? hookController.recent(limit: 20) else { return nil }
+
+        return events.reversed().compactMap { event -> HookContextPayload? in
+            guard let data = event.payload.data(using: .utf8),
+                  let payload = try? JSONDecoder.fridge.decode(AgentHookFridgePayload.self, from: data),
+                  hasUsefulMetadata(payload.hookContext) else {
+                return nil
+            }
+            return payload.hookContext
+        }.first
+    }
+
+    private func hasUsefulMetadata(_ context: HookContextPayload) -> Bool {
+        context.lastTool != nil
+            || context.cwd != nil
+            || context.pendingPromptSummary != nil
+            || context.activeTaskDescription != nil
+    }
+
+    private func taskDescription(from context: HookContextPayload) -> String? {
+        if let activeTaskDescription = context.activeTaskDescription {
+            return activeTaskDescription
+        }
+        if let pendingPromptSummary = context.pendingPromptSummary {
+            return pendingPromptSummary
+        }
+        if let lastTool = context.lastTool, let cwd = context.cwd {
+            return "Last tool: \(lastTool) in \(cwd)"
+        }
+        if let lastTool = context.lastTool {
+            return "Last tool: \(lastTool)"
+        }
+        return context.cwd.map { "Working directory: \($0)" }
+    }
+
     private func processExists(_ pid: Int32) -> Bool {
         kill(pid, 0) == 0 || errno == EPERM
+    }
+}
+
+private extension JSONDecoder {
+    static var fridge: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
     }
 }

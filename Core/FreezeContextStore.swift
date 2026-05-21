@@ -19,6 +19,7 @@ public struct FreezeContextRecord: Codable, Sendable {
     public let lastTool: String?
     public let cwd: String
     public let activeChildPID: Int32?
+    public let activeTaskDescription: String?
     public let pendingPromptSummary: String?
     public let frozenPIDs: [Int32]
     public let processes: [FrozenProcessContext]

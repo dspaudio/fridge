@@ -41,6 +41,7 @@ public struct HookContextPayload: Codable, Sendable {
     public let lastTool: String?
     public let cwd: String?
     public let pendingPromptSummary: String?
+    public let activeTaskDescription: String?
 }
 
 public struct ResumeProbePayload: Codable, Sendable {
@@ -152,7 +153,7 @@ public final class AgentHookPayloadBuilder: @unchecked Sendable {
     private func hookContext(from payload: String) -> HookContextPayload {
         guard let data = payload.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) else {
-            return HookContextPayload(lastTool: nil, cwd: nil, pendingPromptSummary: nil)
+            return HookContextPayload(lastTool: nil, cwd: nil, pendingPromptSummary: nil, activeTaskDescription: nil)
         }
 
         return HookContextPayload(
@@ -165,6 +166,15 @@ public final class AgentHookPayloadBuilder: @unchecked Sendable {
                 "user_prompt",
                 "userPrompt",
                 "message"
+            ])),
+            activeTaskDescription: summarize(firstString(in: object, keys: [
+                "active_task_description",
+                "activeTaskDescription",
+                "task_description",
+                "taskDescription",
+                "active_child",
+                "activeChild",
+                "title"
             ]))
         )
     }
